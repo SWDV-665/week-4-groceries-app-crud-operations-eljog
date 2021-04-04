@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
-import { ToastController, AlertController } from '@ionic/angular';
+import { ToastController } from '@ionic/angular';
 import { Item } from '../models/models';
+import { GroceriesService } from '../services/groceries.service';
+import { InputDialogService } from '../services/input-dialog.service';
 
 @Component({
   selector: 'app-home',
@@ -10,15 +12,18 @@ import { Item } from '../models/models';
 export class HomePage {
 
   title = "Grocery"
-  items: Array<Item> = [];
 
-  constructor(private toastController: ToastController, private alertController: AlertController) { }
+  constructor(private toastController: ToastController, private groceryService: GroceriesService, private inputDialogService: InputDialogService) { }
+
+  public loadItems() {
+    return this.groceryService.getItems();
+  }
 
   /**
    * API to trigger adding an item.
    */
   public async addItem() {
-    await this.addItemViaPrompt();
+    await this.inputDialogService.showPrompt();
   }
 
   /**
@@ -32,62 +37,22 @@ export class HomePage {
     });
     await toast.present();
 
-    this.items.splice(index, 1);
+    this.groceryService.removeItem(index);
+
   }
 
   /**
-   * Collect item input via alert dialog prompt.
-   * @param message optional message. Can be used for displaying error message.
+   * Edit the item at given index.
+   * @param item the item to edit
+   * @param index item index.
    */
-  private async addItemViaPrompt(message: string | undefined = undefined) {
-    const prompt = await this.alertController.create({
-      header: "Add Item",
-      message: message,
-      inputs: [
-        {
-          name: 'name',
-          type: 'text',
-          placeholder: 'Name',
-        },
-        {
-          name: 'quantity',
-          type: 'number',
-          placeholder: 'Quantity',
-        },
-      ],
-      buttons: [
-        {
-          text: 'Cancel',
-        },
-        {
-          text: 'Add',
-          handler: this.validateAndAddItem,
-        }
-      ]
+  public async editItem(item: Item, index: number) {
+    const toast = await this.toastController.create({
+      message: 'Editing Item',
+      duration: 3000
     });
+    await toast.present();
 
-    await prompt.present();
+    await this.inputDialogService.showPrompt(item, index);
   }
-
-  /**
-   * Validate and add an item.
-   * @param item grocery item.
-   */
-  private validateAndAddItem = async (item: Item) => {
-    // Add if the item is valid
-    if (item && item.name.length && item.quantity > 0) {
-      this.items.push(item);
-
-      const toast = await this.toastController.create({
-        message: `Added Item: ${item.name}, Quantity ${item.quantity}`,
-        duration: 3000
-      });
-      await toast.present();
-    }
-    else {
-      // Show the prompt again, if the item is not valid.
-      this.addItemViaPrompt("Please eneter valid data");
-    }
-  }
-
 }
